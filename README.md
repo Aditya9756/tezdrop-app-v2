@@ -1,1 +1,1 @@
-# tezdrop-app-v2
+# tezdrop-app
