@@ -188,8 +188,6 @@ class AddressSelectScreen extends StatelessWidget {
                     ));
                     return;
                   }
-                    return;
-                  }
                   if (state.cart.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('Pehle kuch items cart mein dalo! 🛒'),
