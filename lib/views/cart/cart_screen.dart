@@ -136,8 +136,7 @@ class _CartContentState extends State<_CartContent> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Center(
-                            child: Text(it.product.image,
-                                style: const TextStyle(fontSize: 28)),
+                            child: ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(it.product.image, width: 56, height: 56, fit: BoxFit.cover, errorBuilder: (c,e,s) => const Icon(Icons.fastfood, size: 28),),
                           ),
                         ),
                         const SizedBox(width: 12),
