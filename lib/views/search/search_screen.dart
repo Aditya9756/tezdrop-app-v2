@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:speech_to_text/speech_listen_options.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/product_model.dart';
@@ -80,10 +79,8 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() { _query = r.recognizedWords; _ctrl.text = r.recognizedWords; });
         if (r.finalResult) setState(() => _isListening = false);
       },
-      listenOptions: SpeechListenOptions(
-        listenFor: const Duration(seconds: 10),
-        pauseFor:  const Duration(seconds: 3),
-      ),
+            listenFor: const Duration(seconds: 10),
+            pauseFor: const Duration(seconds: 3),
     );
   }
 
