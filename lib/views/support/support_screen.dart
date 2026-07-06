@@ -11,12 +11,12 @@ class SupportScreen extends StatelessWidget {
     final waWebUrl  = Uri.parse('https://wa.me/${AppStrings.supportWA}?text=${Uri.encodeComponent(message)}');
 
     // 1. Try WhatsApp app directly
-    if (await canLaunchUrl(waAppUrl)) {
+    try {
       await launchUrl(waAppUrl, mode: LaunchMode.externalApplication);
       return;
     }
     // 2. Fallback: open wa.me in browser (works even if WA not installed)
-    if (await canLaunchUrl(waWebUrl)) {
+    try {
       await launchUrl(waWebUrl, mode: LaunchMode.externalApplication);
       return;
     }
