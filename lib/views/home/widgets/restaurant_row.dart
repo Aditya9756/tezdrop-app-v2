@@ -36,9 +36,9 @@ class RestaurantRow extends StatelessWidget {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(16)),
-                    child: ProductImage(
+                    child: SizedBox(width: double.infinity, child: ProductImage(
                       image: r.image,
-                      size: 80,
+                      size: 130,
                       emojiFontSize: 36,
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(16)),
