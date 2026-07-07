@@ -125,17 +125,15 @@ class _CartContentState extends State<_CartContent> {
                               bottom: BorderSide(color: AppColors.border))
                           : null,
                     ),
-                    child: Row(
-                      children: [
-                        // Image
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Center(
-                            child: ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(it.product.image, width: 56, height: 56, fit: BoxFit.cover, errorBuilder: (c,e,s) => const Icon(Icons.fastfood, size: 28),),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.network(
+                      it.product.image,
+                      width: 56, height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c,e,s) => const Icon(Icons.fastfood, size: 28),
+                    ),
+                  ),
                           ),
                         ),
                         const SizedBox(width: 12),
