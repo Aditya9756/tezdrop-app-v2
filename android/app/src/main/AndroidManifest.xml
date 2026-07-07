@@ -37,18 +37,10 @@
         <intent>
             <action android:name="android.intent.action.DIAL"/>
             <data android:scheme="tel"/>
-        <intent>
-          <action android:name="android.intent.action.VIEW"/>
-          <data android:scheme="whatsapp"/>
-        </intent>
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="tel"/>
-        <intent>
-          <action android:name="android.intent.action.VIEW"/>
-          <data android:scheme="whatsapp"/>
-        </intent>
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
