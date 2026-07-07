@@ -128,7 +128,6 @@ class _CartContentState extends State<_CartContent> {
                     child: Row(
                       children: [
                         // Image
-                        Container(
                           width: 56,
                           height: 56,
                           decoration: BoxDecoration(

@@ -14,12 +14,12 @@ class SupportScreen extends StatelessWidget {
     try {
       await launchUrl(waAppUrl, mode: LaunchMode.externalApplication);
       return;
-    }
+    } catch (_) {}
     // 2. Fallback: open wa.me in browser (works even if WA not installed)
     try {
       await launchUrl(waWebUrl, mode: LaunchMode.externalApplication);
       return;
-    }
+    } catch (_) {}
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('WhatsApp khul nahi pa raha. Browser mein try karein.')),
