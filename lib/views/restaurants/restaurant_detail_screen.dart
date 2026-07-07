@@ -60,13 +60,24 @@ class RestaurantDetailScreen extends StatelessWidget {
               ),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: const Color(0xFFF3F4F6),
-                child: Center(
-                  child: Text(rest.image,
-                      style: const TextStyle(fontSize: 80)),
-                ),
-              ),
+              background: rest.image.trim().startsWith('http')
+                  ? Image.network(
+                      rest.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => Container(
+                        color: const Color(0xFFF3F4F6),
+                        child: const Center(
+                          child: Icon(Icons.restaurant, size: 60, color: AppColors.textGrey),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: const Color(0xFFF3F4F6),
+                      child: Center(
+                        child: Text(rest.image,
+                            style: const TextStyle(fontSize: 80)),
+                      ),
+                    ),
             ),
           ),
           SliverToBoxAdapter(
