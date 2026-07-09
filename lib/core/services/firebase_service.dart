@@ -153,6 +153,35 @@ class FirebaseService {
     }
   }
 
+  /// Get real-time order status + rider info from Firebase — set by the
+  /// Rider app when it accepts/updates the order. Polls the SAME node the
+  /// rider app writes to (orders/{firebaseKey}), not a separate mirror node.
+  static Future<Map<String, dynamic>?> getOrderLiveInfo(String orderId) async {
+    try {
+      final res = await http
+          .get(Uri.parse('$_base/orders.json?t=${DateTime.now().millisecondsSinceEpoch}'))
+          .timeout(const Duration(seconds: 6));
+      if (res.statusCode != 200 || res.body == 'null') return null;
+      final data = jsonDecode(res.body);
+      if (data is! Map) return null;
+      for (final entry in data.entries) {
+        if (entry.value is Map) {
+          final o = Map<String, dynamic>.from(entry.value as Map);
+          if (o['orderId'] == orderId) {
+            return {
+              'status'     : o['status'],
+              'riderName'  : o['rider'] ?? '',
+              'riderPhone' : o['riderPhone'] ?? '',
+            };
+          }
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Get real-time order status from Firebase — set by rider/admin app
   static Future<String?> getOrderStatus(String orderId) async {
     try {

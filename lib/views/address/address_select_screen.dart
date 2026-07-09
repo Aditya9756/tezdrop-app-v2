@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
 import '../../providers/app_state_provider.dart';
+import 'map_address_picker_screen.dart';
 
 class AddressSelectScreen extends StatelessWidget {
   const AddressSelectScreen({super.key});
@@ -71,6 +72,41 @@ class AddressSelectScreen extends StatelessWidget {
                   ),
                   const Icon(Icons.gps_fixed,
                       color: AppColors.green, size: 22),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MapAddressPickerScreen()),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.map_outlined, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Set Location on Map',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('Pin-point your exact address',
+                            style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.textLight),
                 ]),
               ),
             ),

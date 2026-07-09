@@ -40,6 +40,8 @@ class OrderModel {
   final String orderId;
   final String phone;
   final String address;
+  final double lat;
+  final double lng;
   final List<OrderItemSnapshot> items;
   final double total;
   String status;
@@ -55,6 +57,8 @@ class OrderModel {
     required this.orderId,
     required this.phone,
     required this.address,
+    this.lat = 0,
+    this.lng = 0,
     required this.items,
     required this.total,
     this.status      = 'Confirmed',
@@ -80,6 +84,8 @@ class OrderModel {
       orderId     : json['orderId']     ?? '',
       phone       : json['phone']       ?? '',
       address     : json['address']     ?? '',
+      lat         : (json['lat'] as num?)?.toDouble() ?? 0,
+      lng         : (json['lng'] as num?)?.toDouble() ?? 0,
       items       : parsedItems,
       total       : (json['total'] as num?)?.toDouble() ?? 0,
       status      : json['status']      ?? 'Confirmed',
@@ -97,6 +103,8 @@ class OrderModel {
     'orderId'    : orderId,
     'phone'      : phone,
     'address'    : address,
+    'lat'        : lat,
+    'lng'        : lng,
     'items'      : items.map((e) => e.toJson()).toList(),
     'total'      : total,
     'status'     : status,

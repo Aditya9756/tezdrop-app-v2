@@ -317,6 +317,8 @@ class AppStateProvider extends ChangeNotifier {
       orderId     : oid,
       phone       : _user!.phone,
       address     : _currentAddress,
+      lat         : _lat,
+      lng         : _lng,
       items       : _cart.map((i) => OrderItemSnapshot(
         id       : i.product.id,
         name     : i.product.name,
