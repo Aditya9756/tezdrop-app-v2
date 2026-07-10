@@ -25,6 +25,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   // ── WebView ──────────────────────────────────────────────────────────────
   late final WebViewController _webCtrl;
   bool _mapReady = false;
+  String? _mapDebugMsg;
 
   // ── Location ─────────────────────────────────────────────────────────────
   double? _userLat, _userLng;
@@ -88,6 +89,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         onPageFinished: (_) {
           setState(() => _mapReady = true);
           _refreshMap();
+        },
+        onWebResourceError: (error) {
+          setState(() {
+            _mapDebugMsg = 'MAP DEBUG: [${error.errorCode}] ${error.description} '
+                '(mainFrame: ${error.isForMainFrame})';
+          });
         },
       ))
       ..loadHtmlString(_buildMapHtml(), baseUrl: 'https://tezdrop.app/');
@@ -247,6 +254,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
             // Loading indicator while page loads
             if (!_mapReady)
               const Center(child: CircularProgressIndicator()),
+
+            // Debug error overlay — visible directly on screen, no logcat needed
+            if (_mapDebugMsg != null)
+              Positioned(
+                left: 8, right: 8, bottom: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.black87,
+                  child: Text(
+                    _mapDebugMsg!,
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                ),
+              ),
 
             // Animated bike overlay (floating on top of the WebView)
             // The bike icon is positioned in the CENTRE of the map box when
