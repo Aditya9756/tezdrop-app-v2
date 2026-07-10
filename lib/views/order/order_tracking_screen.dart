@@ -90,7 +90,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           _refreshMap();
         },
       ))
-      ..loadHtmlString(_buildMapHtml());
+      ..loadHtmlString(_buildMapHtml(), baseUrl: 'https://tezdrop.app/');
   }
 
   /// Builds the full HTML page with an embedded Google Maps iframe.
@@ -147,7 +147,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     _webCtrl.loadHtmlString(_buildMapHtml(
       uLat: _userLat, uLng: _userLng,
       rLat: _riderLat, rLng: _riderLng,
-    ));
+    ), baseUrl: 'https://tezdrop.app/');
   }
 
   // ── User location ─────────────────────────────────────────────────────────
