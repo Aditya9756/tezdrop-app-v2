@@ -10,15 +10,46 @@ class SupportScreen extends StatelessWidget {
     final waAppUrl  = Uri.parse('whatsapp://send?phone=${AppStrings.supportWA}&text=${Uri.encodeComponent(message)}');
     final waWebUrl  = Uri.parse('https://wa.me/${AppStrings.supportWA}?text=${Uri.encodeComponent(message)}');
     try {
-      await launchUrl(waAppUrl, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      try { await launchUrl(waWebUrl, mode: LaunchMode.externalApplication); } catch (_) {}
+      final ok = await launchUrl(waAppUrl, mode: LaunchMode.externalApplication);
+      if (ok) return;
+    } catch (e) {
+      debugPrint('WA app error: $e');
+    }
+    try {
+      final ok = await launchUrl(waWebUrl, mode: LaunchMode.externalApplication);
+      if (ok) return;
+    } catch (e) {
+      debugPrint('WA web error: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('DEBUG WA error: $e')),
+        );
+      }
+      return;
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('DEBUG: WA app aur web dono launchUrl false return kiya, koi exception nahi')),
+      );
     }
   }
 
   Future<void> _launchCall(BuildContext context) async {
     final telUrl = Uri.parse('tel:${AppStrings.supportPhone}');
-    try { await launchUrl(telUrl, mode: LaunchMode.externalApplication); } catch (_) {}
+    try {
+      final ok = await launchUrl(telUrl, mode: LaunchMode.externalApplication);
+      if (!ok && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('DEBUG: Call launchUrl false return kiya')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('DEBUG Call error: $e')),
+        );
+      }
+    }
   }
 
   void _showIssueSheet(BuildContext context, String title, String desc) {
