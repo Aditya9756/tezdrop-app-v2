@@ -395,8 +395,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                     if (_riderPhone.isNotEmpty)
                       GestureDetector(
                         onTap: () async {
-                          final u = Uri.parse('tel:$_riderPhone');
-                          try { await launchUrl(u); } catch (_) {}
+                          try {
+                            await launchUrl(Uri.parse('tel:$_riderPhone'), mode: LaunchMode.externalApplication);
+                          } catch (_) {}
                         },
                         child: Container(
                           width: 40, height: 40,

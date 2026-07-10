@@ -9,35 +9,16 @@ class SupportScreen extends StatelessWidget {
   Future<void> _launchWhatsApp(BuildContext context, String message) async {
     final waAppUrl  = Uri.parse('whatsapp://send?phone=${AppStrings.supportWA}&text=${Uri.encodeComponent(message)}');
     final waWebUrl  = Uri.parse('https://wa.me/${AppStrings.supportWA}?text=${Uri.encodeComponent(message)}');
-
-    // 1. Try WhatsApp app directly
     try {
       await launchUrl(waAppUrl, mode: LaunchMode.externalApplication);
-      return;
-    } catch (_) {}
-    // 2. Fallback: open wa.me in browser (works even if WA not installed)
-    try {
-      await launchUrl(waWebUrl, mode: LaunchMode.externalApplication);
-      return;
-    } catch (_) {}
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('WhatsApp khul nahi pa raha. Browser mein try karein.')),
-      );
+    } catch (_) {
+      try { await launchUrl(waWebUrl, mode: LaunchMode.externalApplication); } catch (_) {}
     }
   }
 
   Future<void> _launchCall(BuildContext context) async {
     final telUrl = Uri.parse('tel:${AppStrings.supportPhone}');
-    try {
-      await launchUrl(telUrl, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Call nahi ho pa rahi. Phone app check karein.')),
-        );
-      }
-    }
+    try { await launchUrl(telUrl, mode: LaunchMode.externalApplication); } catch (_) {}
   }
 
   void _showIssueSheet(BuildContext context, String title, String desc) {
