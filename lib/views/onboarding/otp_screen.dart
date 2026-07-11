@@ -146,12 +146,12 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Future<void> _finishLogin(String phone, String name, String email) async {
     final state = context.read<AppStateProvider>();
-    state.createUser(phone, name, email: email);
+    final isNewUser = state.createUser(phone, name, email: email);
     await state.loadData();
     state.restoreCartAfterLoad();
     if (mounted) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
-      _snack('Welcome to TezDrop! 🎉 +10 Bonus Coins!');
+      _snack(isNewUser ? 'Welcome to TezDrop! 🎉 +10 Bonus Coins!' : 'Welcome back! 👋');
     }
   }
 

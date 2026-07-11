@@ -410,20 +410,34 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void createUser(String phone, String name, {String email = ''}) {
-    // Pehle se logged in same phone pe coins wapas nahi milenge
-    final bool isNewUser = _user == null || _user!.phone != phone;
-    final int startCoins = isNewUser ? 10 : _user!.coins;
-    final referCode = 'TEZ${phone.substring(phone.length - 4)}';
+  /// Returns true if this phone is genuinely new (no saved record found),
+  /// so the UI can show the correct "+10 bonus" message only when it's real.
+  bool createUser(String phone, String name, {String email = ''}) {
+    // Check for a previously saved record for this exact phone — this
+    // survives logout, so a returning user's real coin balance is restored
+    // instead of being reset to a fresh "new user" bonus every login.
+    UserModel? existing;
+    final existingJson = _prefs?.getString('td_user_$phone');
+    if (existingJson != null) {
+      try {
+        existing = UserModel.fromJson(jsonDecode(existingJson));
+      } catch (_) {}
+    }
+
+    final bool isNewUser = existing == null;
+    final referCode = existing?.referCode ?? 'TEZ${phone.substring(phone.length - 4)}';
+
     _user = UserModel(
       phone     : phone,
-      name      : name,
-      email     : email,
-      coins     : startCoins,
+      name      : name.isNotEmpty ? name : (existing?.name ?? name),
+      email     : email.isNotEmpty ? email : (existing?.email ?? email),
+      coins     : isNewUser ? 10 : existing!.coins,
       referCode : referCode,
+      avatarIndex: existing?.avatarIndex ?? 0,
     );
     _saveUser();
     notifyListeners();
+    return isNewUser;
   }
 
   void updateProfile({String? name, String? email, int? avatarIndex}) {
@@ -534,7 +548,11 @@ class AppStateProvider extends ChangeNotifier {
 
   void _saveUser() {
     if (_user != null) {
-      _prefs?.setString('td_user', jsonEncode(_user!.toJson()));
+      final json = jsonEncode(_user!.toJson());
+      _prefs?.setString('td_user', json);
+      // Phone-keyed backup — survives logout, so a returning user's real
+      // coin balance can be restored instead of resetting to a "new user".
+      _prefs?.setString('td_user_${_user!.phone}', json);
     }
   }
 

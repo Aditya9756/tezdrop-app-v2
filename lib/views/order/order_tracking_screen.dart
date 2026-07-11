@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/location_service.dart';
@@ -22,10 +23,10 @@ class OrderTrackingScreen extends StatefulWidget {
 class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     with TickerProviderStateMixin {
 
-  // ── WebView ──────────────────────────────────────────────────────────────
-  late final WebViewController _webCtrl;
+  // ── Map (OpenStreetMap via flutter_map — same approach as address picker,
+  // no API key needed, renders real tiles reliably) ──────────────────────────
+  final MapController _mapController = MapController();
   bool _mapReady = false;
-  String? _mapDebugMsg;
 
   // ── Location ─────────────────────────────────────────────────────────────
   double? _userLat, _userLng;
@@ -34,7 +35,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
   // ── Bike smooth animation ─────────────────────────────────────────────────
   // We animate from the old rider position to the new one over 1 second
-  // so the bike icon on the map slides smoothly instead of jumping.
+  // so the bike marker slides smoothly instead of jumping.
   double? _animFromLat, _animFromLng;
   double? _animToLat, _animToLng;
   late AnimationController _bikeAnimCtrl;
@@ -65,10 +66,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       duration: const Duration(milliseconds: 1000),
     );
     _bikeAnim = CurvedAnimation(parent: _bikeAnimCtrl, curve: Curves.easeInOut);
-
     _bikeAnimCtrl.addListener(_onBikeAnimTick);
 
-    _initWebView();
     _loadUserLocation();
     _startPolling();
   }
@@ -81,88 +80,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     super.dispose();
   }
 
-  // ── WebView setup ────────────────────────────────────────────────────────
-  void _initWebView() {
-    _webCtrl = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (_) {
-          setState(() => _mapReady = true);
-          _refreshMap();
-        },
-        onWebResourceError: (error) {
-          setState(() {
-            _mapDebugMsg = 'MAP DEBUG: [${error.errorCode}] ${error.description} '
-                '(mainFrame: ${error.isForMainFrame})';
-          });
-        },
-      ))
-      ..loadHtmlString(_buildMapHtml(), baseUrl: 'https://tezdrop.app/');
-  }
-
-  /// Builds the full HTML page with an embedded Google Maps iframe.
-  /// When we have coordinates we append them as a directions URL;
-  /// otherwise we load a generic map of India.
-  String _buildMapHtml({double? uLat, double? uLng, double? rLat, double? rLng}) {
-    String mapSrc;
-    if (uLat != null && rLat != null) {
-      // Directions from rider to user — shows the route on Google Maps
-      mapSrc = 'https://www.google.com/maps/embed/v1/directions'
-          '?key=AIzaSyD-placeholder'   // no key needed for basic embed
-          '&origin=$rLat,$rLng'
-          '&destination=$uLat,$uLng'
-          '&mode=driving';
-      // Fallback: use the simple search embed which needs no API key
-      mapSrc = 'https://maps.google.com/maps'
-          '?q=$rLat,$rLng'
-          '&z=15'
-          '&output=embed';
-    } else if (uLat != null) {
-      mapSrc = 'https://maps.google.com/maps'
-          '?q=$uLat,$uLng'
-          '&z=15'
-          '&output=embed';
-    } else {
-      mapSrc = 'https://maps.google.com/maps?q=India&z=5&output=embed';
-    }
-
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { width:100vw; height:100vh; overflow:hidden; }
-    iframe { width:100%; height:100%; border:none; }
-  </style>
-</head>
-<body>
-  <iframe
-    src="$mapSrc"
-    allowfullscreen
-    loading="lazy"
-    referrerpolicy="no-referrer-when-downgrade">
-  </iframe>
-</body>
-</html>
-''';
-  }
-
-  void _refreshMap() {
-    if (!_mapReady) return;
-    _webCtrl.loadHtmlString(_buildMapHtml(
-      uLat: _userLat, uLng: _userLng,
-      rLat: _riderLat, rLng: _riderLng,
-    ), baseUrl: 'https://tezdrop.app/');
-  }
-
   // ── User location ─────────────────────────────────────────────────────────
   Future<void> _loadUserLocation() async {
     final pos = await LocationService.getCurrentPosition();
     if (pos != null && mounted) {
       setState(() { _userLat = pos.latitude; _userLng = pos.longitude; });
-      _refreshMap();
+      _fitMapToPoints();
     }
   }
 
@@ -211,20 +134,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         _riderLng = lng;
         _hasRiderFix = true;
       });
-      _refreshMap();
+      _fitMapToPoints();
     }
   }
 
   /// Called every animation tick — interpolates the rider's position
   /// between the old and new coordinates for a smooth sliding effect.
+  /// flutter_map's MarkerLayer picks this up automatically via setState,
+  /// no manual iframe/HTML reload needed.
   void _onBikeAnimTick() {
     if (_animFromLat == null || _animToLat == null) return;
     final t = _bikeAnim.value;
     final lat = _animFromLat! + (_animToLat! - _animFromLat!) * t;
     final lng = _animFromLng! + (_animToLng! - _animFromLng!) * t;
     setState(() { _riderLat = lat; _riderLng = lng; });
-    // Refresh the map every ~10 frames so the iframe follows the position
-    if ((_bikeAnimCtrl.value * 10).round() % 2 == 0) _refreshMap();
   }
 
   double _bearing() {
@@ -237,10 +160,31 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
   }
 
+  /// Moves/zooms the real map camera so both the customer and rider
+  /// (whichever are known) are visible. Uses flutter_map's own camera
+  /// fitting — real projection, not a manual screen-space hack.
+  void _fitMapToPoints() {
+    if (!_mapReady) return;
+    final points = <LatLng>[];
+    if (_userLat != null && _userLng != null) points.add(LatLng(_userLat!, _userLng!));
+    if (_riderLat != null && _riderLng != null) points.add(LatLng(_riderLat!, _riderLng!));
+    if (points.isEmpty) return;
+    if (points.length == 1) {
+      _mapController.move(points.first, 15);
+      return;
+    }
+    final bounds = LatLngBounds.fromPoints(points);
+    _mapController.fitCamera(
+      CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(60)),
+    );
+  }
+
   // ── UI ────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final mapHeight = MediaQuery.of(context).size.height * 0.42;
+    final userPoint = (_userLat != null && _userLng != null) ? LatLng(_userLat!, _userLng!) : null;
+    final riderPoint = (_hasRiderFix && _riderLat != null && _riderLng != null) ? LatLng(_riderLat!, _riderLng!) : null;
 
     return Scaffold(
       body: Column(children: [
@@ -248,54 +192,58 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         SizedBox(
           height: mapHeight,
           child: Stack(children: [
-            // Google Maps WebView
-            WebViewWidget(controller: _webCtrl),
-
-            // Loading indicator while page loads
-            if (!_mapReady)
-              const Center(child: CircularProgressIndicator()),
-
-            // Debug error overlay — visible directly on screen, no logcat needed
-            if (_mapDebugMsg != null)
-              Positioned(
-                left: 8, right: 8, bottom: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.black87,
-                  child: Text(
-                    _mapDebugMsg!,
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
-                  ),
-                ),
-              ),
-
-            // Animated bike overlay (floating on top of the WebView)
-            // The bike icon is positioned in the CENTRE of the map box when
-            // we have a rider fix, to represent the rider's current position
-            // visually. (Full pixel-perfect GPS→screen coordinate mapping
-            // requires the Maps JS SDK; this approach gives a clear animated
-            // indicator without needing an API key.)
-            if (_hasRiderFix)
-              AnimatedBuilder(
-                animation: _bikeAnim,
-                builder: (_, __) {
-                  return Center(
-                    child: Transform.rotate(
-                      angle: _bearing() * math.pi / 180,
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 12, spreadRadius: 2)],
-                        ),
-                        child: const Center(child: Text('🛵', style: TextStyle(fontSize: 26))),
-                      ),
-                    ),
-                  );
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: userPoint ?? riderPoint ?? const LatLng(28.6315, 77.2167),
+                initialZoom: 15,
+                onMapReady: () {
+                  _mapReady = true;
+                  _fitMapToPoints();
                 },
               ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.tezdrop.app',
+                ),
+                MarkerLayer(markers: [
+                  if (userPoint != null)
+                    Marker(
+                      point: userPoint,
+                      width: 32, height: 32,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.textDark, width: 2),
+                          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+                        ),
+                        child: const Icon(Icons.home_rounded, size: 16, color: AppColors.textDark),
+                      ),
+                    ),
+                  if (riderPoint != null)
+                    Marker(
+                      point: riderPoint,
+                      width: 46, height: 46,
+                      child: AnimatedBuilder(
+                        animation: _bikeAnim,
+                        builder: (_, __) => Transform.rotate(
+                          angle: _bearing() * math.pi / 180,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 12, spreadRadius: 2)],
+                            ),
+                            child: const Center(child: Text('🛵', style: TextStyle(fontSize: 22))),
+                          ),
+                        ),
+                      ),
+                    ),
+                ]),
+              ],
+            ),
 
             // Connecting overlay when no rider fix yet
             if (!_hasRiderFix)
