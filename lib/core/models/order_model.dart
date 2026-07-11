@@ -51,6 +51,7 @@ class OrderModel {
   final int coinsUsed;
   final int coinsEarned;
   final String timestamp;
+  final String deliveryOtp; // 4-digit code the customer shares with the rider at handover
   String? firebaseKey; // Firebase mein jo key assign hoti hai
 
   OrderModel({
@@ -68,6 +69,7 @@ class OrderModel {
     this.coinsUsed   = 0,
     this.coinsEarned = 0,
     required this.timestamp,
+    this.deliveryOtp = '',
     this.firebaseKey,
   });
 
@@ -95,6 +97,7 @@ class OrderModel {
       coinsUsed   : (json['coinsUsed']   as num?)?.toInt() ?? 0,
       coinsEarned : (json['coinsEarned'] as num?)?.toInt() ?? 0,
       timestamp   : json['timestamp']   ?? '',
+      deliveryOtp : json['deliveryOtp'] ?? '',
       firebaseKey : key,
     );
   }
@@ -114,5 +117,6 @@ class OrderModel {
     'coinsUsed'  : coinsUsed,
     'coinsEarned': coinsEarned,
     'timestamp'  : timestamp,
+    'deliveryOtp': deliveryOtp,
   };
 }

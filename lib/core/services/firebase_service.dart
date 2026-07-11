@@ -172,6 +172,7 @@ class FirebaseService {
               'status'     : o['status'],
               'riderName'  : o['rider'] ?? '',
               'riderPhone' : o['riderPhone'] ?? '',
+              'deliveryOtp': o['deliveryOtp'] ?? '',
             };
           }
         }

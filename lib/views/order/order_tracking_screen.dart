@@ -3,10 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/firebase_service.dart';
+import '../../core/services/road_route_service.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId, riderName, riderPhone;
@@ -27,6 +29,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   // no API key needed, renders real tiles reliably) ──────────────────────────
   final MapController _mapController = MapController();
   bool _mapReady = false;
+  List<LatLng> _routePoints = [];
 
   // ── Location ─────────────────────────────────────────────────────────────
   double? _userLat, _userLng;
@@ -48,6 +51,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
   // ── Order status ──────────────────────────────────────────────────────────
   String _orderStatus = 'Placed';
+  String _deliveryOtp = '';
+  bool _statusLoaded = false;
   static const List<String> _statusOrder = ['Placed','Preparing','Packed','On Way','Delivered'];
 
   // ── Pollers ───────────────────────────────────────────────────────────────
@@ -99,7 +104,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
   Future<void> _pollStatus() async {
     final info = await FirebaseService.getOrderLiveInfo(widget.orderId);
-    if (!mounted || info == null) return;
+    if (!mounted) return;
+    if (!_statusLoaded) setState(() => _statusLoaded = true);
+    if (info == null) return;
 
     final status = info['status'] as String?;
     if (status != null && _statusOrder.contains(status) && status != _orderStatus) {
@@ -110,6 +117,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     final riderPhone = (info['riderPhone'] as String?) ?? '';
     if (riderName.isNotEmpty && riderName != _riderName) {
       setState(() { _riderName = riderName; _riderPhone = riderPhone; });
+    }
+
+    final otp = (info['deliveryOtp'] as String?) ?? '';
+    if (otp.isNotEmpty && otp != _deliveryOtp) {
+      setState(() => _deliveryOtp = otp);
     }
   }
 
@@ -177,6 +189,18 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     _mapController.fitCamera(
       CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(60)),
     );
+    _loadRoute();
+  }
+
+  /// Fetches the real road path between rider and customer (OSRM), same
+  /// service the Rider app already uses successfully.
+  Future<void> _loadRoute() async {
+    if (_userLat == null || _riderLat == null) return;
+    final path = await RoadRouteService.getRoadPath(
+      LatLng(_riderLat!, _riderLng!),
+      LatLng(_userLat!, _userLng!),
+    );
+    if (mounted) setState(() => _routePoints = path);
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -207,6 +231,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.tezdrop.app',
                 ),
+                if (_routePoints.length > 1)
+                  PolylineLayer(polylines: [
+                    Polyline(points: _routePoints, color: AppColors.primary, strokeWidth: 4),
+                  ]),
                 MarkerLayer(markers: [
                   if (userPoint != null)
                     Marker(
@@ -305,7 +333,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         Expanded(
           child: Container(
             color: Theme.of(context).colorScheme.surface,
-            child: ListView(
+            child: !_statusLoaded
+                ? _bottomPanelSkeleton()
+                : ListView(
               padding: const EdgeInsets.all(20),
               children: [
                 // Status + order id
@@ -394,11 +424,65 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                     )),
                   ]),
                 ),
+
+                // Delivery OTP — customer shows this to the rider at handover
+                if (_deliveryOtp.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFED7AA)),
+                    ),
+                    child: Column(children: [
+                      const Text('Share this OTP with your rider at delivery',
+                          style: TextStyle(fontSize: 12, color: AppColors.textGrey), textAlign: TextAlign.center),
+                      const SizedBox(height: 8),
+                      Text(
+                        _deliveryOtp.split('').join('  '),
+                        style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Color(0xFFEA580C), letterSpacing: 4),
+                      ),
+                    ]),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ]),
+    );
+  }
+
+  Widget _bottomPanelSkeleton() {
+    Widget box(double w, double h, {double r = 8}) => Container(
+      width: w, height: h,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(r)),
+    );
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFE5E7EB),
+      highlightColor: const Color(0xFFF9FAFB),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              box(120, 18), const SizedBox(height: 8), box(90, 12),
+            ]),
+            box(46, 46, r: 23),
+          ]),
+          const SizedBox(height: 20),
+          Row(children: List.generate(5, (i) => Expanded(child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Column(children: [box(28, 28, r: 14), const SizedBox(height: 6), box(40, 8)]),
+          )))),
+          const SizedBox(height: 20),
+          box(double.infinity, 64, r: 14),
+          const SizedBox(height: 12),
+          box(double.infinity, 40, r: 12),
+        ]),
+      ),
     );
   }
 

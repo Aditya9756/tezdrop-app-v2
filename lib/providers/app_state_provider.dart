@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/models/user_model.dart';
@@ -313,6 +314,11 @@ class AppStateProvider extends ChangeNotifier {
     final earned = (total * 0.01).ceil().clamp(1, 9999);
     final usedCoins = coinsDiscount;
 
+    // Delivery OTP — random 4-digit code only the customer can see. The
+    // rider must ask the customer for this and enter it in their app to
+    // mark the order as delivered — prevents mistaken/fraudulent handovers.
+    final otp = (1000 + math.Random().nextInt(9000)).toString();
+
     final orderData = OrderModel(
       orderId     : oid,
       phone       : _user!.phone,
@@ -334,6 +340,7 @@ class AppStateProvider extends ChangeNotifier {
       coinsUsed   : usedCoins,
       coinsEarned : earned,
       timestamp   : DateTime.now().toString().substring(0, 19),
+      deliveryOtp : otp,
     );
 
     final key = await FirebaseService.placeOrder(orderData.toJson());
