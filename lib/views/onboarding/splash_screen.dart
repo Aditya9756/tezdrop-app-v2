@@ -5,6 +5,8 @@ import '../../providers/app_state_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/version_check_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -29,8 +31,15 @@ class _SplashScreenState extends State<SplashScreen>
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
     _ctrl.forward();
 
-    Timer(const Duration(seconds: 3), () {
+    Timer(const Duration(seconds: 3), () async {
       if (!mounted) return;
+
+      final update = await VersionCheckService.checkForUpdate();
+      if (update != null && mounted) {
+        await _showUpdateDialog(update['downloadUrl']!, update['latestVersion']!);
+      }
+      if (!mounted) return;
+
       final state = context.read<AppStateProvider>();
       if (state.isLoggedIn) {
         // Load data then go home
@@ -45,6 +54,29 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
       }
     });
+  }
+
+  Future<void> _showUpdateDialog(String downloadUrl, String latestVersion) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Update Available ⚡'),
+        content: Text('A new version ($latestVersion) of TezDrop is ready. Update now for the latest features and fixes.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await launchUrl(Uri.parse(downloadUrl), mode: LaunchMode.externalApplication);
+              } catch (_) {}
+            },
+            child: const Text('Update Now'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
