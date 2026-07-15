@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/services/otp_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../providers/app_state_provider.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -149,6 +150,7 @@ class _OtpScreenState extends State<OtpScreen> {
     final isNewUser = state.createUser(phone, name, email: email);
     await state.loadData();
     state.restoreCartAfterLoad();
+    NotificationService.saveTokenForPhone(phone);
     if (mounted) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
       _snack(isNewUser ? 'Welcome to TezDrop! 🎉 +10 Bonus Coins!' : 'Welcome back! 👋');

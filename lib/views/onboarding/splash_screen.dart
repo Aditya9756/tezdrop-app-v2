@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
+import '../../core/services/notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -35,6 +36,7 @@ class _SplashScreenState extends State<SplashScreen>
         // Load data then go home
         state.loadData().then((_) {
           state.restoreCartAfterLoad();
+          if (state.user != null) NotificationService.saveTokenForPhone(state.user!.phone);
           if (mounted) {
             Navigator.pushReplacementNamed(context, AppRoutes.home);
           }

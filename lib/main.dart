@@ -4,9 +4,16 @@ import 'package:provider/provider.dart';
 import 'providers/app_state_provider.dart';
 import 'core/constants/app_theme.dart';
 import 'core/routes/app_routes.dart';
+import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await NotificationService.init();
+  } catch (e) {
+    debugPrint('Notification init failed: $e');
+  }
 
   // Status bar fully transparent - no black bar
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

@@ -9,6 +9,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/location_service.dart';
 import '../../core/services/firebase_service.dart';
 import '../../core/services/road_route_service.dart';
+import '../../core/services/notification_service.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId, riderName, riderPhone;
@@ -50,10 +51,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   late String _riderPhone;
 
   // ── Order status ──────────────────────────────────────────────────────────
-  String _orderStatus = 'Placed';
+  String _orderStatus = 'Confirmed';
   String _deliveryOtp = '';
   bool _statusLoaded = false;
-  static const List<String> _statusOrder = ['Placed','Preparing','Packed','On Way','Delivered'];
+  bool _firstPollDone = false;
+  static const List<String> _statusOrder = ['Confirmed','Preparing','Packed','On the Way','Delivered'];
 
   // ── Pollers ───────────────────────────────────────────────────────────────
   Timer? _statusTimer;
@@ -110,8 +112,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
     final status = info['status'] as String?;
     if (status != null && _statusOrder.contains(status) && status != _orderStatus) {
+      final isFirstLoad = !_firstPollDone;
       setState(() => _orderStatus = status);
+      if (!isFirstLoad) {
+        NotificationService.show(
+          id: widget.orderId.hashCode,
+          title: _titleForStatus(status),
+          body: 'Order #${widget.orderId} — $status',
+        );
+      }
     }
+    _firstPollDone = true;
 
     final riderName = (info['riderName'] as String?) ?? '';
     final riderPhone = (info['riderPhone'] as String?) ?? '';
@@ -486,12 +497,22 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     );
   }
 
+  String _titleForStatus(String status) {
+    switch (status) {
+      case 'Preparing':   return '🔥 Your order is being prepared!';
+      case 'Packed':      return '📦 Order packed — rider pickup soon';
+      case 'On the Way':  return '🛵 Your rider is on the way!';
+      case 'Delivered':   return '🏠 Order delivered — enjoy!';
+      default:            return 'Order update';
+    }
+  }
+
   IconData _iconFor(String step) {
     switch (step) {
-      case 'Placed':    return Icons.check;
+      case 'Confirmed': return Icons.check;
       case 'Preparing': return Icons.local_fire_department;
       case 'Packed':    return Icons.inventory_2;
-      case 'On Way':    return Icons.motorcycle;
+      case 'On the Way': return Icons.motorcycle;
       case 'Delivered': return Icons.home;
       default:          return Icons.circle;
     }

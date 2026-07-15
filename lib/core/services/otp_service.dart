@@ -3,15 +3,19 @@ import 'package:http/http.dart' as http;
 import '../constants/app_strings.dart';
 
 class OtpService {
-  // Test/backdoor number - fixed OTP, no real SMS sent
-  static const String _testPhone = '9756765881';
+  // Test/backdoor numbers - fixed OTP, no real SMS sent to these
+  static const Set<String> _testPhones = {
+    '9756765881',
+    '7037473395',
+    '9058055350',
+  };
   static const String _testOtp = '745680';
   static const String _testSession = 'TEST_SESSION_LOCAL';
 
   // Send OTP — returns session string, null on failure
   static Future<String?> sendOtp(String phone) async {
-    // Bypass for test number
-    if (phone == _testPhone) {
+    // Bypass for test numbers
+    if (_testPhones.contains(phone)) {
       return _testSession;
     }
     try {

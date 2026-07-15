@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "501189694418",
+    "firebase_url": "https://tezdrop-84fb4-default-rtdb.firebaseio.com",
+    "project_id": "tezdrop-84fb4",
+    "storage_bucket": "tezdrop-84fb4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501189694418:android:758d2cdccbef3fce98ae0b",
+        "android_client_info": {
+          "package_name": "com.tezdrop.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJXevZljRC0V_7Wa4iVY8F8Hd5fmSFm5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501189694418:android:60c620321ded89f698ae0b",
+        "android_client_info": {
+          "package_name": "com.tezdrop.rider"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJXevZljRC0V_7Wa4iVY8F8Hd5fmSFm5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501189694418:android:af9fc6202f2a250b98ae0b",
+        "android_client_info": {
+          "package_name": "com.tezdrop.vendor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJXevZljRC0V_7Wa4iVY8F8Hd5fmSFm5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

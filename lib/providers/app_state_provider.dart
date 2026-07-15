@@ -11,6 +11,7 @@ import '../core/models/order_model.dart';
 import '../core/models/address_model.dart';
 import '../core/services/firebase_service.dart';
 import '../core/services/location_service.dart';
+import '../core/services/notification_service.dart';
 import '../core/constants/app_strings.dart';
 
 class AppStateProvider extends ChangeNotifier {
@@ -347,6 +348,11 @@ class AppStateProvider extends ChangeNotifier {
     if (key != null) {
       orderData.firebaseKey = key;
       _lastOrder = orderData;
+      NotificationService.notifyOthers(
+        path: 'vendors',
+        title: '⚡ New order!',
+        body: '#$oid — ₹${total.toInt()}',
+      );
       // Update user coins
       _user = _user!.copyWith(
         coins: (_user!.coins - usedCoins + earned).clamp(0, 999999),
