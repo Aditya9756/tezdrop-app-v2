@@ -147,6 +147,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                             AppRoutes.tracking,
                             arguments: {
                               'orderId'   : order?.orderId ?? '',
+                              'firebaseKey': order?.firebaseKey ?? '',
                               'riderName' : order?.rider ?? '',
                               'riderPhone': order?.riderPhone ?? '',
                             },

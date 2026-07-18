@@ -5,17 +5,18 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/location_service.dart';
-import '../../core/services/firebase_service.dart';
 import '../../core/services/road_route_service.dart';
 import '../../core/services/notification_service.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
-  final String orderId, riderName, riderPhone;
+  final String orderId, firebaseKey, riderName, riderPhone;
   const OrderTrackingScreen({
     super.key,
     required this.orderId,
+    required this.firebaseKey,
     required this.riderName,
     required this.riderPhone,
   });
@@ -57,9 +58,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   bool _firstPollDone = false;
   static const List<String> _statusOrder = ['Confirmed','Preparing','Packed','On the Way','Delivered'];
 
-  // ── Pollers ───────────────────────────────────────────────────────────────
-  Timer? _statusTimer;
-  Timer? _riderTimer;
+  // ── Real-time listeners (replaces old REST polling — instant updates,
+  // no more up-to-6-second delay) ─────────────────────────────────────────
+  StreamSubscription<DatabaseEvent>? _orderSub;
+  StreamSubscription<DatabaseEvent>? _riderLocationSub;
+  final _db = FirebaseDatabase.instance;
 
   @override
   void initState() {
@@ -76,14 +79,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     _bikeAnimCtrl.addListener(_onBikeAnimTick);
 
     _loadUserLocation();
-    _startPolling();
+    _startListening();
   }
 
   @override
   void dispose() {
     _bikeAnimCtrl.dispose();
-    _statusTimer?.cancel();
-    _riderTimer?.cancel();
+    _orderSub?.cancel();
+    _riderLocationSub?.cancel();
     super.dispose();
   }
 
@@ -96,19 +99,21 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     }
   }
 
-  // ── Polling ───────────────────────────────────────────────────────────────
-  void _startPolling() {
-    _pollStatus();
-    _pollRider();
-    _statusTimer = Timer.periodic(const Duration(seconds: 6),  (_) => _pollStatus());
-    _riderTimer  = Timer.periodic(const Duration(seconds: 4),  (_) => _pollRider());
+  // ── Real-time order status + rider location ─────────────────────────────
+  void _startListening() {
+    if (widget.firebaseKey.isNotEmpty) {
+      _orderSub = _db.ref('orders/${widget.firebaseKey}').onValue.listen(_onOrderUpdate);
+    }
+    _riderLocationSub = _db.ref('rider_locations/${widget.orderId}').onValue.listen(_onRiderLocationUpdate);
   }
 
-  Future<void> _pollStatus() async {
-    final info = await FirebaseService.getOrderLiveInfo(widget.orderId);
+  void _onOrderUpdate(DatabaseEvent event) {
     if (!mounted) return;
     if (!_statusLoaded) setState(() => _statusLoaded = true);
-    if (info == null) return;
+
+    final raw = event.snapshot.value;
+    if (raw is! Map) return;
+    final info = Map<String, dynamic>.from(raw);
 
     final status = info['status'] as String?;
     if (status != null && _statusOrder.contains(status) && status != _orderStatus) {
@@ -124,7 +129,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     }
     _firstPollDone = true;
 
-    final riderName = (info['riderName'] as String?) ?? '';
+    final riderName = (info['rider'] as String?) ?? '';
     final riderPhone = (info['riderPhone'] as String?) ?? '';
     if (riderName.isNotEmpty && riderName != _riderName) {
       setState(() { _riderName = riderName; _riderPhone = riderPhone; });
@@ -136,9 +141,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     }
   }
 
-  Future<void> _pollRider() async {
-    final d = await FirebaseService.getRiderLocation(widget.orderId);
-    if (!mounted || d == null) return;
+  void _onRiderLocationUpdate(DatabaseEvent event) {
+    if (!mounted) return;
+    final raw = event.snapshot.value;
+    if (raw is! Map) return;
+    final d = Map<String, dynamic>.from(raw);
     final lat = (d['lat'] as num?)?.toDouble();
     final lng = (d['lng'] as num?)?.toDouble();
     if (lat == null || lng == null) return;

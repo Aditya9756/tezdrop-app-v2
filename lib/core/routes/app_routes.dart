@@ -122,9 +122,10 @@ class AppRoutes {
       case tracking:
         return _slide(
           OrderTrackingScreen(
-            orderId    : args['orderId']    ?? '',
-            riderName  : args['riderName']  ?? '',
-            riderPhone : args['riderPhone'] ?? '',
+            orderId     : args['orderId']     ?? '',
+            firebaseKey : args['firebaseKey'] ?? '',
+            riderName   : args['riderName']   ?? '',
+            riderPhone  : args['riderPhone']  ?? '',
           ),
           settings,
         );
