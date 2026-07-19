@@ -1,1 +1,0 @@
-# tezdrop-app
