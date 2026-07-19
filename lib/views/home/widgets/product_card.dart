@@ -159,17 +159,21 @@ class ProductCard extends StatelessWidget {
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
-                                Text('₹${product.price.toInt()}',
+                                Text(
+                                    product.hasWeightVariants
+                                        ? 'From ₹${product.startingPrice.toInt()}'
+                                        : '₹${product.price.toInt()}',
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w900,
                                         fontSize: 14,
                                         color: AppColors.primary)),
-                                Text('₹${product.oldPrice.toInt()}',
-                                    style: const TextStyle(
-                                        fontSize: 10,
-                                        color: AppColors.textLight,
-                                        decoration:
-                                            TextDecoration.lineThrough)),
+                                if (!product.hasWeightVariants)
+                                  Text('₹${product.oldPrice.toInt()}',
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.textLight,
+                                          decoration:
+                                              TextDecoration.lineThrough)),
                               ],
                             ),
                             // Add / qty control
@@ -184,6 +188,26 @@ class ProductCard extends StatelessWidget {
                                 child: const Icon(Icons.block,
                                     size: 14,
                                     color: AppColors.textLight),
+                              )
+                            else if (product.hasWeightVariants)
+                              GestureDetector(
+                                onTap: () => showWeightVariantPicker(context, product),
+                                child: Container(
+                                  height: 28,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEE2E2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add, color: AppColors.primary, size: 14),
+                                      SizedBox(width: 2),
+                                      Text('Add', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
                               )
                             else if (cartQty > 0)
                               _QtyControl(product: product)
@@ -267,6 +291,55 @@ class _Badge extends StatelessWidget {
               fontWeight: FontWeight.bold)),
     );
   }
+}
+
+/// Bottom sheet letting the customer pick a weight (e.g. 100g/250g/500g/1kg)
+/// before it's added to the cart — used for loose grocery items priced by weight.
+void showWeightVariantPicker(BuildContext context, ProductModel product) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (sheetCtx) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 4),
+              const Text('Select weight', style: TextStyle(color: AppColors.textLight, fontSize: 12)),
+              const SizedBox(height: 14),
+              ...product.weightVariants.map((v) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GestureDetector(
+                  onTap: () {
+                    context.read<AppStateProvider>().addToCart(product, selectedVariant: v);
+                    Navigator.pop(sheetCtx);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.border),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(v['weight'].toString(), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        Text('₹${(v['price'] as num).toInt()}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.primary)),
+                      ],
+                    ),
+                  ),
+                ),
+              )),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _QtyControl extends StatelessWidget {

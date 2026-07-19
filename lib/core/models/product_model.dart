@@ -14,6 +14,9 @@ class ProductModel {
   final String? restId;
   // Vendor app se set hoga — list of {name, price} maps
   final List<Map<String, dynamic>> addOns;
+  // Loose/grocery items sold by weight — list of {weight, price} maps,
+  // e.g. [{weight:'100g', price:20}, {weight:'500g', price:80}]
+  final List<Map<String, dynamic>> weightVariants;
 
   const ProductModel({
     required this.id,
@@ -30,6 +33,7 @@ class ProductModel {
     this.unit,
     this.restId,
     this.addOns    = const [],
+    this.weightVariants = const [],
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -43,6 +47,18 @@ class ProductModel {
                 'price': (e['price'] as num?)?.toDouble() ?? 0.0,
               })
           .where((e) => (e['name'] as String).isNotEmpty)
+          .toList();
+    }
+
+    List<Map<String, dynamic>> parsedVariants = [];
+    if (json['weightVariants'] != null && json['weightVariants'] is List) {
+      parsedVariants = (json['weightVariants'] as List)
+          .whereType<Map>()
+          .map((e) => {
+                'weight': e['weight']?.toString() ?? '',
+                'price': (e['price'] as num?)?.toDouble() ?? 0.0,
+              })
+          .where((e) => (e['weight'] as String).isNotEmpty)
           .toList();
     }
 
@@ -61,6 +77,7 @@ class ProductModel {
       unit      : json['unit'],
       restId    : json['restId'],
       addOns    : parsedAddOns,
+      weightVariants: parsedVariants,
     );
   }
 
@@ -79,6 +96,7 @@ class ProductModel {
     if (unit    != null) 'unit'  : unit,
     if (restId  != null) 'restId': restId,
     if (addOns.isNotEmpty) 'addOns': addOns,
+    if (weightVariants.isNotEmpty) 'weightVariants': weightVariants,
   };
 
   int get discountPercent {
@@ -89,4 +107,13 @@ class ProductModel {
   bool get isOutOfStock => stock == 0;
   bool get isLowStock   => stock > 0 && stock <= 5;
   bool get hasAddOns    => addOns.isNotEmpty;
+  bool get hasWeightVariants => weightVariants.isNotEmpty;
+
+  /// Lowest variant price, for "From ₹X" display on product cards.
+  double get startingPrice {
+    if (!hasWeightVariants) return price;
+    return weightVariants
+        .map((v) => (v['price'] as num).toDouble())
+        .reduce((a, b) => a < b ? a : b);
+  }
 }

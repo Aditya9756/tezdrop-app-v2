@@ -5,6 +5,7 @@ import '../../core/models/product_model.dart';
 import '../../core/routes/app_routes.dart';
 import '../../providers/app_state_provider.dart';
 import '../widgets/product_image.dart';
+import '../home/widgets/product_card.dart' show showWeightVariantPicker;
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -468,6 +469,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       onTap: p.isOutOfStock
                           ? null
                           : () {
+                              if (p.hasWeightVariants) {
+                                Navigator.pop(context);
+                                showWeightVariantPicker(context, p);
+                                return;
+                              }
                               for (int i = 0; i < _qty; i++) {
                                 state.addToCart(p, selectedAddOns: activeAddOns);
                               }

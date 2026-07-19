@@ -144,8 +144,8 @@ class AppStateProvider extends ChangeNotifier {
   List<CartItemModel> get cart => _cart;
   int get cartCount => _cart.fold(0, (s, i) => s + i.quantity);
 
-  void addToCart(ProductModel p, {List<Map<String, dynamic>> selectedAddOns = const []}) {
-    final newItem = CartItemModel(product: p, selectedAddOns: selectedAddOns);
+  void addToCart(ProductModel p, {List<Map<String, dynamic>> selectedAddOns = const [], Map<String, dynamic>? selectedVariant}) {
+    final newItem = CartItemModel(product: p, selectedAddOns: selectedAddOns, selectedVariant: selectedVariant);
     final idx = _cart.indexWhere((i) => i.cartKey == newItem.cartKey);
     if (idx >= 0) {
       if (_cart[idx].quantity < p.stock) {
@@ -160,8 +160,8 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeFromCart(ProductModel p, {List<Map<String, dynamic>> selectedAddOns = const []}) {
-    final tempKey = CartItemModel(product: p, selectedAddOns: selectedAddOns).cartKey;
+  void removeFromCart(ProductModel p, {List<Map<String, dynamic>> selectedAddOns = const [], Map<String, dynamic>? selectedVariant}) {
+    final tempKey = CartItemModel(product: p, selectedAddOns: selectedAddOns, selectedVariant: selectedVariant).cartKey;
     final idx = _cart.indexWhere((i) => i.cartKey == tempKey);
     if (idx >= 0) {
       if (_cart[idx].quantity > 1) {
