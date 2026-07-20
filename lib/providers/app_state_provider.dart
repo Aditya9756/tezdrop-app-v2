@@ -95,24 +95,33 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   void _parseRemoteData(Map<String, dynamic> d) {
+    // Both regular products and grocery items now live in the SAME
+    // /products node (matching the Vendor app, which only ever writes
+    // there) — split client-side by isGrocery instead of relying on two
+    // separate Firebase nodes. Previously grocery items were read from a
+    // separate /grocery node that the Vendor app never wrote to, so any
+    // grocery product added via the Vendor app silently never appeared
+    // for customers.
     if (d['products'] is Map || d['products'] is List) {
       final raw = d['products'] is Map
           ? (d['products'] as Map).values
           : (d['products'] as List);
-      _products = raw
+      final all = raw
           .whereType<Map>()
           .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e)))
-          .where((p) => !p.isGrocery)
           .toList();
+      _products = all.where((p) => !p.isGrocery).toList();
+      _groceryItems = all.where((p) => p.isGrocery).toList();
     }
+    // Legacy /grocery node — still merged in for backward compatibility
+    // with any items that were added there before this fix.
     if (d['grocery'] is Map || d['grocery'] is List) {
       final raw = d['grocery'] is Map
           ? (d['grocery'] as Map).values
           : (d['grocery'] as List);
-      _groceryItems = raw
+      _groceryItems.addAll(raw
           .whereType<Map>()
-          .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+          .map((e) => ProductModel.fromJson(Map<String, dynamic>.from(e))));
     }
     if (d['restaurants'] is Map || d['restaurants'] is List) {
       final raw = d['restaurants'] is Map

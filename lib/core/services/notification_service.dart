@@ -6,6 +6,18 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../constants/app_strings.dart';
 
+/// Must be a top-level (or static) function, and marked with this pragma,
+/// so Android can find and run it in a separate isolate when the app is
+/// fully killed and a push arrives. For plain "notification" messages
+/// (which is all this app receives — see Worker) Android shows these via
+/// the system tray automatically without any code even running; this
+/// handler mainly matters if data-only messages are ever added later.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Intentionally minimal — do not touch UI/state here, this runs in an
+  // isolate with no widget tree.
+}
+
 /// Real FCM push notifications — work even when the app is fully closed.
 /// A backend Cloud Function (see /functions in the repo) watches the
 /// `orders` node and sends a push whenever an order's status changes; this
@@ -18,6 +30,7 @@ class NotificationService {
     if (_ready) return;
     try {
       await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     } catch (e) {
       debugPrint('Firebase init failed: $e');
       return;
